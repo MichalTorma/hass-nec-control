@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.3] - 2024-08-05
+
+### Fixed
+- Fixed s6-overlay permission issue by removing s6-setuidgid command that was causing "Operation not permitted" errors
+
 ## [1.0.2] - 2024-08-05
 
 ### Fixed

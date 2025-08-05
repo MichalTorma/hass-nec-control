@@ -16,4 +16,4 @@ export TV_IP
 export TV_PORT
 
 # Start the main service loop
-exec s6-setuidgid root /usr/bin/python3 /usr/bin/nec_tv_service.py 
+exec /usr/bin/python3 /usr/bin/nec_tv_service.py 
