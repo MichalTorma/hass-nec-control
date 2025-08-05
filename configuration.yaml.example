@@ -1,0 +1,47 @@
+# Example Home Assistant configuration for NEC TV Control
+# Add this to your configuration.yaml
+
+# REST switch for NEC TV Power Control
+switch:
+  - platform: rest
+    name: "NEC TV Power"
+    resource: "http://localhost:8124/power"
+    body_on: '{"action": "on"}'
+    body_off: '{"action": "off"}'
+    headers:
+      Content-Type: application/json
+
+# Optional: Create a group for easier control
+group:
+  nec_tv:
+    name: NEC TV
+    entities:
+      - switch.nec_tv_power
+
+# Optional: Create automations
+automation:
+  # Turn off TV when leaving home
+  - alias: "Turn off TV when leaving"
+    trigger:
+      platform: state
+      entity_id: group.all_devices
+      to: "not_home"
+    action:
+      - service: switch.turn_off
+        target:
+          entity_id: switch.nec_tv_power
+
+  # Turn on TV when arriving home (if it's evening)
+  - alias: "Turn on TV when arriving home in evening"
+    trigger:
+      platform: state
+      entity_id: group.all_devices
+      to: "home"
+    condition:
+      - condition: time
+        after: "18:00:00"
+        before: "23:00:00"
+    action:
+      - service: switch.turn_on
+        target:
+          entity_id: switch.nec_tv_power 

@@ -1,0 +1,19 @@
+#!/usr/bin/with-contenv bashio
+# ==============================================================================
+# Start the NEC TV Control service
+# ==============================================================================
+
+# Load configuration values
+TV_IP=$(bashio::config 'tv_ip')
+TV_PORT=$(bashio::config 'tv_port' 7142)
+
+bashio::log.info "Starting NEC TV Control service"
+bashio::log.info "TV IP: ${TV_IP}"
+bashio::log.info "TV Port: ${TV_PORT}"
+
+# Export configuration for the scripts
+export TV_IP
+export TV_PORT
+
+# Start the main service loop
+exec s6-setuidgid root /usr/bin/python3 /usr/bin/nec_tv_service.py 
