@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.10] - 2024-08-05
+
+### Fixed
+- Added GET handler for `/power` endpoint to fix 404 errors from Home Assistant
+- Updated REST switch configuration to include `is_on_template` for state handling
+- Fixed version numbers throughout the service to match current version
+- Added note about TV state query limitations in the configuration
+
 ## [1.0.9] - 2024-08-05
 
 ### Fixed

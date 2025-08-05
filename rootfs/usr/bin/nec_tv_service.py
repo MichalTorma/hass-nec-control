@@ -39,7 +39,7 @@ class NECTVHandler(BaseHTTPRequestHandler):
             
             response = {
                 'name': 'NEC TV Control',
-                'version': '1.0.5',
+                'version': '1.0.9',
                 'tv_ip': TV_IP,
                 'tv_port': TV_PORT
             }
@@ -57,7 +57,7 @@ class NECTVHandler(BaseHTTPRequestHandler):
                     'name': 'NEC TV',
                     'manufacturer': 'NEC',
                     'model': 'Network TV',
-                    'sw_version': '1.0.5'
+                    'sw_version': '1.0.9'
                 }],
                 'entities': [
                     {
@@ -86,7 +86,9 @@ switch:
     body_on: '{{"action": "on"}}'
     body_off: '{{"action": "off"}}'
     headers:
-      Content-Type: application/json"""
+      Content-Type: application/json
+    # Note: TV state cannot be queried via network, so we use a default template
+    is_on_template: "false"  # Always shows as off, but commands still work"""
             
             html_content = f"""<!DOCTYPE html>
 <html lang="en">
@@ -233,6 +235,20 @@ switch:
             
             self.wfile.write(html_content.encode())
             
+        elif parsed_url.path == '/power':
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            
+            # For now, we'll return a default state since we can't query the TV
+            # In a real implementation, you might want to try to query the TV's actual state
+            response = {
+                'state': 'unknown',
+                'message': 'TV state cannot be determined via network query',
+                'note': 'This is a limitation of the NEC TV protocol - we can only send commands, not query state'
+            }
+            self.wfile.write(json.dumps(response).encode())
+            
         elif parsed_url.path == '/health':
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
@@ -241,7 +257,7 @@ switch:
             response = {
                 'status': 'healthy',
                 'service': 'NEC TV Control',
-                'version': '1.0.5'
+                'version': '1.0.9'
             }
             self.wfile.write(json.dumps(response).encode())
             
