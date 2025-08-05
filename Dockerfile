@@ -7,3 +7,7 @@ COPY rootfs /
 
 # Make Python service executable
 RUN chmod +x /usr/bin/nec_tv_service.py
+
+# Ensure service scripts are executable
+RUN chmod +x /etc/services.d/hass-nec-control/run \
+    && chmod +x /etc/services.d/hass-nec-control/finish

@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.2] - 2024-08-05
+
+### Fixed
+- Fixed service run script permissions - added execute permissions to run and finish scripts
+
 ## [1.0.1] - 2024-08-05
 
 ### Changed
