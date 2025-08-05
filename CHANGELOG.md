@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.7] - 2024-08-05
+
+### Changed
+- Cleaned up repository structure - removed HACS integration files
+- Simplified README with clear setup instructions
+- Focused on addon + REST switch approach (standard Home Assistant pattern)
+- Removed test files and unnecessary complexity
+
 ## [1.0.6] - 2024-08-05
 
 ### Changed

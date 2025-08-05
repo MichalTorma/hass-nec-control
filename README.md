@@ -34,37 +34,21 @@ tv_port: 7142
 
 ## Usage
 
-### REST API
-
-The add-on provides a REST API on port 8124:
-
-#### Get Service Info
-```bash
-GET http://localhost:8123/
-```
-
-#### Get Device Discovery Info
-```bash
-GET http://localhost:8123/discovery
-```
-
-#### Control TV Power
-```bash
-POST http://localhost:8123/power
-Content-Type: application/json
-
-{
-  "action": "on"  # or "off"
-}
-```
-
 ### Home Assistant Integration
 
-The add-on automatically provides device discovery information that can be used to create entities in Home Assistant.
+The add-on provides a REST API that can be easily integrated with Home Assistant.
 
-#### Manual Integration
+#### Quick Setup
 
-You can also manually create a switch entity in your `configuration.yaml`:
+1. **Start the addon** and note the port (default: 8124)
+2. **Visit the setup page**: `http://localhost:8124/homeassistant`
+3. **Copy the configuration** provided on that page
+4. **Add to your `configuration.yaml`**
+5. **Restart Home Assistant**
+
+#### Manual Configuration
+
+Add this to your `configuration.yaml`:
 
 ```yaml
 switch:
@@ -73,9 +57,29 @@ switch:
     resource: "http://localhost:8124/power"
     body_on: '{"action": "on"}'
     body_off: '{"action": "off"}'
-    is_on_template: "{{ value_json.success }}"
     headers:
       Content-Type: application/json
+```
+
+### REST API
+
+The add-on also provides a REST API for direct control:
+
+#### Control TV Power
+```bash
+curl -X POST http://localhost:8124/power \
+  -H "Content-Type: application/json" \
+  -d '{"action": "on"}'
+```
+
+#### Get Service Info
+```bash
+curl http://localhost:8124/
+```
+
+#### Health Check
+```bash
+curl http://localhost:8124/health
 ```
 
 ## Troubleshooting
