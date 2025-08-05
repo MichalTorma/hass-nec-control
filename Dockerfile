@@ -10,9 +10,6 @@ RUN apk add --no-cache \
 # Copy root filesystem
 COPY rootfs /
 
-# Copy custom integration to Home Assistant config
-COPY custom_components /config/custom_components/
-
 # Make Python service executable
 RUN chmod +x /usr/bin/nec_tv_service.py
 

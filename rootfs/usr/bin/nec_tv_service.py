@@ -39,21 +39,9 @@ class NECTVHandler(BaseHTTPRequestHandler):
             
             response = {
                 'name': 'NEC TV Control',
-                'version': '1.0.0',
+                'version': '1.0.5',
                 'tv_ip': TV_IP,
                 'tv_port': TV_PORT
-            }
-            self.wfile.write(json.dumps(response).encode())
-            
-        elif parsed_url.path == '/health':
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            
-            response = {
-                'status': 'healthy',
-                'service': 'NEC TV Control',
-                'version': '1.0.0'
             }
             self.wfile.write(json.dumps(response).encode())
             
@@ -69,7 +57,7 @@ class NECTVHandler(BaseHTTPRequestHandler):
                     'name': 'NEC TV',
                     'manufacturer': 'NEC',
                     'model': 'Network TV',
-                    'sw_version': '1.0.0'
+                    'sw_version': '1.0.5'
                 }],
                 'entities': [
                     {
@@ -83,6 +71,47 @@ class NECTVHandler(BaseHTTPRequestHandler):
                 ]
             }
             self.wfile.write(json.dumps(discovery_info).encode())
+            
+        elif parsed_url.path == '/homeassistant':
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            
+            # Return Home Assistant configuration for easy setup
+            ha_config = {
+                'name': 'NEC TV Control',
+                'description': 'Control your NEC TV via network commands',
+                'configuration': {
+                    'switch': {
+                        'platform': 'rest',
+                        'name': 'NEC TV Power',
+                        'resource': f'http://localhost:8124/power',
+                        'body_on': '{"action": "on"}',
+                        'body_off': '{"action": "off"}',
+                        'headers': {
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                },
+                'setup_instructions': [
+                    '1. Add the switch configuration to your configuration.yaml',
+                    '2. Restart Home Assistant',
+                    '3. The NEC TV Power switch will appear in your dashboard'
+                ]
+            }
+            self.wfile.write(json.dumps(ha_config, indent=2).encode())
+            
+        elif parsed_url.path == '/health':
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            
+            response = {
+                'status': 'healthy',
+                'service': 'NEC TV Control',
+                'version': '1.0.5'
+            }
+            self.wfile.write(json.dumps(response).encode())
             
         else:
             self.send_response(404)
@@ -175,6 +204,7 @@ def main():
     httpd = HTTPServer(server_address, NECTVHandler)
     
     logger.info("Server started on port 8124")
+    logger.info("Visit http://localhost:8124/homeassistant for setup instructions")
     
     try:
         httpd.serve_forever()

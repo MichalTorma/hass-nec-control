@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.6] - 2024-08-05
+
+### Changed
+- Removed custom integration from addon (addons cannot add integrations directly)
+- Added `/homeassistant` endpoint that provides setup instructions
+- Improved API with better configuration information
+- Added setup instructions endpoint for easy Home Assistant configuration
+
+### Setup Instructions
+Visit `http://localhost:8124/homeassistant` in your browser to get the exact configuration needed for Home Assistant.
+
 ## [1.0.5] - 2024-08-05
 
 ### Added
