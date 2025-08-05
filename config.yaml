@@ -3,7 +3,7 @@ name: NEC TV Control
 version: "1.0.0"
 slug: hass-nec-control
 description: Control your NEC TV via network commands
-url: "https://github.com/your-repo/hass-nec-control"
+url: "https://github.com/MichalTorma/ha-repository"
 arch:
   - armhf
   - armv7
@@ -21,4 +21,4 @@ options:
 schema:
   tv_ip: "str"
   tv_port: "int?"
-image: "ghcr.io/your-repo/{arch}-addon-hass-nec-control"
+# image: "ghcr.io/your-repo/{arch}-addon-hass-nec-control"

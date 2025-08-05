@@ -8,7 +8,5 @@ build_from:
 labels:
   org.opencontainers.image.title: "Home Assistant Add-on: NEC TV Control"
   org.opencontainers.image.description: "Control your NEC TV via network commands"
-  org.opencontainers.image.source: "https://github.com/your-repo/hass-nec-control"
+  org.opencontainers.image.source: "https://github.com/MichalTorma/ha-repository"
   org.opencontainers.image.licenses: "Apache License 2.0"
-args:
-  TEMPIO_VERSION: "2021.09.0"
