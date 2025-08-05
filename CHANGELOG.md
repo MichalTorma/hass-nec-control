@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.8] - 2024-08-05
+
+### Changed
+- Completely revamped README with step-by-step integration instructions
+- Added clear Quick Start guide with visual navigation steps
+- Improved troubleshooting section with specific solutions
+- Added features list and API endpoints documentation
+- Made Home Assistant integration much more user-friendly
+
 ## [1.0.7] - 2024-08-05
 
 ### Changed

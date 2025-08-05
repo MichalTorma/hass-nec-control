@@ -1,56 +1,47 @@
 # NEC TV Control Add-on
 
-A Home Assistant add-on that allows you to control your NEC TV via network commands.
+A Home Assistant add-on that allows you to control your NEC TV via network commands. Turn your TV on and off remotely through Home Assistant.
 
-## Features
+## 🚀 Quick Start
 
-- Control NEC TV power on/off via network
-- Configurable TV IP address and port
-- REST API for integration with Home Assistant
-- Automatic device discovery
+### 1. Install the Add-on
 
-## Configuration
+1. **Add this repository** to your Home Assistant instance:
+   - Go to **Settings** → **Add-ons** → **Add-on Store**
+   - Click the three dots (⋮) in the top right
+   - Select **Repositories**
+   - Add: `https://github.com/MichalTorma/ha-repository`
+   - Click **Add**
 
-### Add-on Configuration
+2. **Install the add-on**:
+   - Find **"NEC TV Control"** in the add-on store
+   - Click **Install**
+   - Configure your TV's IP address
+   - Click **Start**
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `tv_ip` | `192.168.1.150` | IP address of your NEC TV |
-| `tv_port` | `7142` | Network port for TV control (usually 7142) |
+### 2. Integrate with Home Assistant
 
-### Example Configuration
+#### Option A: Automatic Setup (Recommended)
 
-```yaml
-tv_ip: "192.168.1.100"
-tv_port: 7142
-```
+1. **Get the configuration**:
+   - Open your browser and go to: `http://localhost:8124/homeassistant`
+   - Copy the configuration shown on that page
 
-## Installation
+2. **Add to Home Assistant**:
+   - Go to **Settings** → **Files** → **configuration.yaml**
+   - Add the copied configuration at the end of the file
+   - Click **Save**
 
-1. Add this repository to your Home Assistant instance
-2. Install the "NEC TV Control" add-on
-3. Configure the TV IP address in the add-on configuration
-4. Start the add-on
+3. **Restart Home Assistant**:
+   - Go to **Settings** → **System** → **Restart**
+   - Click **Restart**
 
-## Usage
-
-### Home Assistant Integration
-
-The add-on provides a REST API that can be easily integrated with Home Assistant.
-
-#### Quick Setup
-
-1. **Start the addon** and note the port (default: 8124)
-2. **Visit the setup page**: `http://localhost:8124/homeassistant`
-3. **Copy the configuration** provided on that page
-4. **Add to your `configuration.yaml`**
-5. **Restart Home Assistant**
-
-#### Manual Configuration
+#### Option B: Manual Configuration
 
 Add this to your `configuration.yaml`:
 
 ```yaml
+# NEC TV Control Integration
 switch:
   - platform: rest
     name: "NEC TV Power"
@@ -61,51 +52,84 @@ switch:
       Content-Type: application/json
 ```
 
-### REST API
+Then restart Home Assistant.
 
-The add-on also provides a REST API for direct control:
+### 3. Use Your TV Control
 
-#### Control TV Power
-```bash
-curl -X POST http://localhost:8124/power \
-  -H "Content-Type: application/json" \
-  -d '{"action": "on"}'
+After restart, you'll have a new switch called **"NEC TV Power"** that you can:
+- **Turn on/off** from your dashboard
+- **Add to automations** and scripts
+- **Control via voice** (if you have voice assistants)
+
+## ⚙️ Configuration
+
+### Add-on Settings
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `tv_ip` | `192.168.1.150` | IP address of your NEC TV |
+| `tv_port` | `7142` | Network port for TV control |
+
+### Example Configuration
+
+```yaml
+tv_ip: "192.168.1.100"
+tv_port: 7142
 ```
 
-#### Get Service Info
-```bash
-curl http://localhost:8124/
-```
-
-#### Health Check
-```bash
-curl http://localhost:8124/health
-```
-
-## Troubleshooting
+## 🔧 Troubleshooting
 
 ### TV Not Responding
 
-1. Verify the TV IP address is correct
-2. Ensure the TV is on the same network
-3. Check that port 7142 is not blocked by firewall
-4. Verify the TV supports network control
+1. **Check TV IP address** - Make sure it's correct in add-on settings
+2. **Verify network connectivity** - Ensure TV is on the same network
+3. **Check firewall** - Port 7142 should not be blocked
+4. **Test TV compatibility** - Verify your TV supports network control
 
 ### Add-on Won't Start
 
-1. Check the add-on logs for error messages
-2. Verify the configuration is valid
-3. Ensure the TV IP address is reachable
+1. **Check logs** - Go to add-on page and click **Logs**
+2. **Verify configuration** - Make sure TV IP is correct
+3. **Check network** - Ensure TV IP is reachable
 
-## Technical Details
+### Integration Not Working
 
-The add-on uses a Python service that communicates with NEC TVs using the network protocol to send binary commands:
+1. **Check add-on is running** - Should show "Running" status
+2. **Verify port** - Default is 8124, check add-on logs
+3. **Test API** - Visit `http://localhost:8124/health` in browser
+4. **Check configuration.yaml** - Make sure syntax is correct
 
-- Power On: `\x01\x30\x41\x30\x41\x30\x43\x02\x43\x32\x30\x33\x44\x36\x30\x30\x30\x31\x03\x73\x0D`
-- Power Off: `\x01\x30\x41\x30\x41\x30\x43\x02\x43\x32\x30\x33\x44\x36\x30\x30\x30\x34\x03\x76\x0D`
+## 📋 Requirements
 
-The service provides a REST API for easy integration with Home Assistant and handles all network communication, error handling, and logging.
+- **Home Assistant** 2023.8.0 or newer
+- **Home Assistant OS** or **Supervised** installation
+- **NEC TV** with network control capability
+- **Network access** to your TV
 
-## Support
+## 🎯 Features
 
-For issues and feature requests, please create an issue in the repository.
+- ✅ **Power on/off control** via network commands
+- ✅ **Configurable TV IP** and port settings
+- ✅ **REST API** for easy integration
+- ✅ **Automatic setup instructions** via web interface
+- ✅ **Health monitoring** and status checking
+- ✅ **Error handling** and logging
+
+## 🔌 API Endpoints
+
+The add-on provides these endpoints:
+
+- **`/`** - Service information
+- **`/health`** - Health check
+- **`/homeassistant`** - Setup instructions
+- **`/power`** - TV control (POST with `{"action": "on"}` or `{"action": "off"}`)
+
+## 🆘 Support
+
+- **Check logs** in the add-on page for detailed error messages
+- **Visit setup page** at `http://localhost:8124/homeassistant` for configuration help
+- **Create an issue** in the repository for bugs or feature requests
+
+---
+
+**Note**: This add-on communicates with your TV over your local network. Make sure your TV supports the NEC network protocol and is configured for network control.
