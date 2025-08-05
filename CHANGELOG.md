@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1] - 2024-08-05
+
+### Changed
+- Simplified Dockerfile to use Home Assistant base images properly
+- Removed redundant package installations (Python already included in base image)
+- Updated repository URLs to point to correct GitHub repository
+- Improved build efficiency and reduced image size
+
 ## [1.0.0] - 2024-08-05
 
 ### Added
