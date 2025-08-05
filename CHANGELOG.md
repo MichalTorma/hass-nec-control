@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.5] - 2024-08-05
+
+### Added
+- Added custom Home Assistant integration for automatic discovery
+- Integration appears in Settings → Devices & Services → Integrations
+- No more manual configuration needed - just click "Add Integration"
+- User-friendly setup with connection testing
+
 ## [1.0.4] - 2024-08-05
 
 ### Fixed
