@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.4] - 2024-08-05
+
+### Fixed
+- Added Python 3 installation to Dockerfile as it's not included in the base image
+- Fixed "No such file or directory" error for /usr/bin/python3
+
 ## [1.0.3] - 2024-08-05
 
 ### Fixed
