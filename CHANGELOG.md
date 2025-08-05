@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.9] - 2024-08-05
+
+### Fixed
+- Fixed `/homeassistant` endpoint to return proper HTML page instead of JSON
+- Added beautiful setup page with copy-to-clipboard functionality
+- Users can now easily copy YAML configuration with one click
+- Added step-by-step visual instructions directly in the setup page
+
 ## [1.0.8] - 2024-08-05
 
 ### Changed

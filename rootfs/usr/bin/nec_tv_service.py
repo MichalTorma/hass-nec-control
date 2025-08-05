@@ -74,32 +74,164 @@ class NECTVHandler(BaseHTTPRequestHandler):
             
         elif parsed_url.path == '/homeassistant':
             self.send_response(200)
-            self.send_header('Content-type', 'application/json')
+            self.send_header('Content-type', 'text/html')
             self.end_headers()
             
-            # Return Home Assistant configuration for easy setup
-            ha_config = {
-                'name': 'NEC TV Control',
-                'description': 'Control your NEC TV via network commands',
-                'configuration': {
-                    'switch': {
-                        'platform': 'rest',
-                        'name': 'NEC TV Power',
-                        'resource': f'http://localhost:8124/power',
-                        'body_on': '{"action": "on"}',
-                        'body_off': '{"action": "off"}',
-                        'headers': {
-                            'Content-Type': 'application/json'
-                        }
-                    }
-                },
-                'setup_instructions': [
-                    '1. Add the switch configuration to your configuration.yaml',
-                    '2. Restart Home Assistant',
-                    '3. The NEC TV Power switch will appear in your dashboard'
-                ]
-            }
-            self.wfile.write(json.dumps(ha_config, indent=2).encode())
+            # Return HTML page with YAML configuration
+            yaml_config = f"""# NEC TV Control Integration
+switch:
+  - platform: rest
+    name: "NEC TV Power"
+    resource: "http://localhost:8124/power"
+    body_on: '{{"action": "on"}}'
+    body_off: '{{"action": "off"}}'
+    headers:
+      Content-Type: application/json"""
+            
+            html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEC TV Control - Home Assistant Setup</title>
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }}
+        .container {{
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }}
+        h1 {{
+            color: #03a9f4;
+            margin-bottom: 20px;
+        }}
+        .step {{
+            background: #e3f2fd;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border-left: 4px solid #03a9f4;
+        }}
+        .yaml-block {{
+            background: #263238;
+            color: #eeffff;
+            padding: 20px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            margin: 15px 0;
+            position: relative;
+        }}
+        .copy-btn {{
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #03a9f4;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }}
+        .copy-btn:hover {{
+            background: #0288d1;
+        }}
+        .success {{
+            background: #e8f5e8;
+            border-left-color: #4caf50;
+            color: #2e7d32;
+        }}
+        .warning {{
+            background: #fff3e0;
+            border-left-color: #ff9800;
+            color: #e65100;
+        }}
+        .info {{
+            background: #e1f5fe;
+            border-left-color: #00bcd4;
+            color: #006064;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 NEC TV Control - Home Assistant Setup</h1>
+        
+        <div class="step info">
+            <strong>📋 Quick Setup Instructions:</strong><br>
+            Copy the configuration below and add it to your Home Assistant configuration.yaml file.
+        </div>
+        
+        <div class="step">
+            <strong>1️⃣ Copy Configuration</strong><br>
+            Click the "Copy" button below to copy the YAML configuration:
+        </div>
+        
+        <div class="yaml-block" id="yaml-config">
+            <button class="copy-btn" onclick="copyToClipboard()">Copy</button>{yaml_config}
+        </div>
+        
+        <div class="step">
+            <strong>2️⃣ Add to Home Assistant</strong><br>
+            • Go to <strong>Settings</strong> → <strong>Files</strong> → <strong>configuration.yaml</strong><br>
+            • Paste the configuration at the end of the file<br>
+            • Click <strong>Save</strong>
+        </div>
+        
+        <div class="step">
+            <strong>3️⃣ Restart Home Assistant</strong><br>
+            • Go to <strong>Settings</strong> → <strong>System</strong> → <strong>Restart</strong><br>
+            • Click <strong>Restart</strong>
+        </div>
+        
+        <div class="step success">
+            <strong>✅ Done!</strong><br>
+            After restart, you'll have a new switch called <strong>"NEC TV Power"</strong> that you can control from your dashboard.
+        </div>
+        
+        <div class="step warning">
+            <strong>⚠️ Important Notes:</strong><br>
+            • Make sure the add-on is running (status should be "Running")<br>
+            • The TV IP address is configured in the add-on settings<br>
+            • If it doesn't work, check the add-on logs for errors
+        </div>
+        
+        <div class="step info">
+            <strong>🔧 Need Help?</strong><br>
+            • Check add-on logs: Go to the add-on page and click "Logs"<br>
+            • Test the API: Visit <a href="/health" target="_blank">http://localhost:8124/health</a><br>
+            • Create an issue in the repository for bugs or questions
+        </div>
+    </div>
+    
+    <script>
+        function copyToClipboard() {{
+            const yamlText = document.getElementById('yaml-config').textContent.replace('Copy', '').trim();
+            navigator.clipboard.writeText(yamlText).then(function() {{
+                const btn = document.querySelector('.copy-btn');
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.style.background = '#4caf50';
+                setTimeout(function() {{
+                    btn.textContent = originalText;
+                    btn.style.background = '#03a9f4';
+                }}, 2000);
+            }});
+        }}
+    </script>
+</body>
+</html>"""
+            
+            self.wfile.write(html_content.encode())
             
         elif parsed_url.path == '/health':
             self.send_response(200)
