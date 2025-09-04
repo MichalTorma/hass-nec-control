@@ -139,7 +139,7 @@ switch:
 For brightness control, add these additional entities:
 
 ```yaml
-# Brightness sensor (read current brightness)
+# Brightness sensor (reads current TV brightness)
 sensor:
   - platform: rest
     name: "NEC TV Brightness"
@@ -150,15 +150,20 @@ sensor:
     unit_of_measurement: "%"
     icon: mdi:brightness-6
 
-# Brightness control slider
-input_number:
-  nec_tv_brightness:
-    name: "NEC TV Brightness Control"
-    min: 0
-    max: 100
-    step: 5
-    unit_of_measurement: "%"
-    icon: mdi:brightness-6
+# Template Number for direct brightness control (modern approach - no automation needed!)
+template:
+  - number:
+      - name: "NEC TV Brightness Control"
+        unique_id: nec_tv_brightness_control
+        min: "0"
+        max: "100"
+        step: "5"
+        icon: mdi:brightness-6
+        state: "{{ states('sensor.nec_tv_brightness') | int(0) }}"
+        set_value:
+          - action: rest_command.set_nec_tv_brightness
+            data:
+              brightness: "{{ value | int }}"
 
 # REST command for setting brightness
 rest_command:
@@ -168,18 +173,13 @@ rest_command:
     headers:
       Content-Type: application/json
     payload: '{"brightness": {{ brightness }}}'
-
-# Automation to apply brightness changes
-automation:
-  - alias: "Set NEC TV Brightness"
-    trigger:
-      platform: state
-      entity_id: input_number.nec_tv_brightness
-    action:
-      service: rest_command.set_nec_tv_brightness
-      data:
-        brightness: "{{ states('input_number.nec_tv_brightness') | int }}"
 ```
+
+**✨ Modern Design Benefits:**
+- 🚫 **No automation needed** - Template number handles it directly
+- 🔄 **Automatic sync** - Shows current TV brightness
+- 🎛️ **Direct control** - Slide to set, immediately updates TV
+- 📱 **UI-friendly** - Creates a proper number entity in dashboards
 
 After adding this configuration:
 1. **Restart Home Assistant**

@@ -12,7 +12,7 @@ switch:
       Content-Type: application/json
     is_on_template: "{{ value_json.is_on }}"
 
-# REST sensor for NEC TV Brightness (read-only)
+# REST sensor for NEC TV Brightness (read current value)
 sensor:
   - platform: rest
     name: "NEC TV Brightness"
@@ -23,26 +23,20 @@ sensor:
     unit_of_measurement: "%"
     icon: mdi:brightness-6
 
-# Input number for brightness control
-input_number:
-  nec_tv_brightness:
-    name: "NEC TV Brightness"
-    min: 0
-    max: 100
-    step: 5
-    unit_of_measurement: "%"
-    icon: mdi:brightness-6
-
-# Automation to set brightness when input_number changes
-automation:
-  - alias: "Set NEC TV Brightness"
-    trigger:
-      platform: state
-      entity_id: input_number.nec_tv_brightness
-    action:
-      service: rest_command.set_nec_tv_brightness
-      data:
-        brightness: "{{ states('input_number.nec_tv_brightness') | int }}"
+# Template Number for direct brightness control (no automation needed!)
+template:
+  - number:
+      - name: "NEC TV Brightness Control"
+        unique_id: nec_tv_brightness_control
+        min: "0"
+        max: "100"
+        step: "5"
+        icon: mdi:brightness-6
+        state: "{{ states('sensor.nec_tv_brightness') | int(0) }}"
+        set_value:
+          - action: rest_command.set_nec_tv_brightness
+            data:
+              brightness: "{{ value | int }}"
 
 # REST command for setting brightness
 rest_command:

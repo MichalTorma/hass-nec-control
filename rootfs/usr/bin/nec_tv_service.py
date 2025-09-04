@@ -502,61 +502,105 @@ switch:
             return {'current': 0, 'max': 100}
 
     def set_tv_brightness(self, percentage):
-        """Set TV brightness (0-100%)"""
-        try:
-            # Get current max brightness to calculate the actual value
-            brightness_info = self.get_tv_brightness()
-            max_brightness = brightness_info['max']
-            
-            # Calculate actual brightness value
-            brightness_value = int((percentage / 100.0) * max_brightness)
-            
-            # Brightness set command: SOH-'0'-'A'-'0'-'E'-'0'-'A'-STX-'0'-'0'-'1'-'0'-VALUE-ETX-BCC-CR
-            cmd = bytearray([0x01, 0x30, 0x41, 0x30, 0x45, 0x30, 0x41, 0x02, 0x30, 0x30, 0x31, 0x30])
-            
-            # Add brightness value as 4-digit hex ASCII
-            brightness_hex = f"{brightness_value:04X}"
-            cmd.extend([ord(c) for c in brightness_hex])
-            cmd.append(0x03)  # ETX
-            
-            # Calculate BCC
-            bcc = 0
-            for byte in cmd[1:]:
-                bcc ^= byte
-            cmd.append(bcc)
-            cmd.append(0x0D)
-            
-            logger.info(f"Setting TV brightness to {percentage}% (value {brightness_value}): {cmd.hex()}")
-            
-            # Create socket connection
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(5)
-            
-            # Connect to TV
-            sock.connect((TV_IP, TV_PORT))
-            
-            # Send command
-            sock.send(cmd)
-            
-            # Wait for response
-            import time
-            time.sleep(1)
+        """Set TV brightness (0-100%) with retry logic"""
+        max_retries = 3
+        retry_delay = 2
+        
+        for attempt in range(max_retries):
             try:
-                response = sock.recv(1024)
-                if response:
-                    logger.info(f"Brightness set response: {response.hex()}")
+                logger.info(f"Setting TV brightness attempt {attempt + 1}/{max_retries}")
+                
+                # Get current max brightness to calculate the actual value
+                brightness_info = self.get_tv_brightness()
+                max_brightness = brightness_info['max']
+                
+                # Small delay after query to avoid overwhelming the TV
+                import time
+                time.sleep(0.5)
+                
+                # Calculate actual brightness value (use percentage directly as NEC expects 0-100)
+                brightness_value = int(percentage)
+                
+                # Exact brightness set command from NEC docs
+                # Header: SOH-'0'-'A'-'0'-'E'-'0'-'A' (Monitor ID A, Set parameter, Length 0A)
+                # Message: STX-'0'-'0'-'1'-'0'-VALUE-ETX (Op page 0, Op code 10h, 4-digit value)
+                cmd = bytearray([
+                    0x01,        # SOH
+                    0x30,        # '0' - Reserved
+                    0x41,        # 'A' - Monitor ID (TV ID 1)
+                    0x30,        # '0' - Message sender (controller)
+                    0x45,        # 'E' - Set parameter command
+                    0x30, 0x41,  # '0A' - Message length (10 bytes)
+                    0x02,        # STX - Start of message
+                    0x30, 0x30,  # '00' - Operation code page
+                    0x31, 0x30,  # '10' - Operation code (brightness = 10h)
+                ])
+                
+                # Add brightness value as 4 ASCII characters representing hex value
+                # Example: 50% = 50 decimal = 0032 hex = ASCII '0','0','3','2'
+                brightness_hex = f"{brightness_value:04X}"
+                cmd.extend([ord(c) for c in brightness_hex])
+                cmd.append(0x03)  # ETX
+                
+                # Calculate BCC
+                bcc = 0
+                for byte in cmd[1:]:
+                    bcc ^= byte
+                cmd.append(bcc)
+                cmd.append(0x0D)
+                
+                logger.info(f"Setting TV brightness to {percentage}% (value {brightness_value}): {cmd.hex()}")
+                
+                # Wait a bit between connection attempts to avoid overwhelming the TV
+                if attempt > 0:
+                    import time
+                    logger.info(f"Waiting {retry_delay} seconds before retry...")
+                    time.sleep(retry_delay)
+                
+                # Create socket connection with shorter timeout
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(3)  # Shorter timeout for quicker retry
+                
+                # Connect to TV
+                sock.connect((TV_IP, TV_PORT))
+                logger.info("Connected successfully for brightness set")
+                
+                # Send command
+                bytes_sent = sock.send(cmd)
+                logger.info(f"Sent {bytes_sent} bytes")
+                
+                # Wait for response
+                import time
+                time.sleep(1)
+                try:
+                    response = sock.recv(1024)
+                    if response:
+                        logger.info(f"Brightness set response: {response.hex()}")
+                    else:
+                        logger.warning("No response to brightness set command")
+                except socket.timeout:
+                    logger.info("No response to brightness set (timeout - may be normal)")
+                
+                sock.close()
+                logger.info(f"Successfully set brightness to {percentage}%")
+                return True
+                
+            except ConnectionRefusedError as e:
+                logger.warning(f"Connection refused on attempt {attempt + 1}: {e}")
+                if attempt < max_retries - 1:
+                    logger.info("Will retry after delay...")
+                    continue
                 else:
-                    logger.warning("No response to brightness set command")
-            except socket.timeout:
-                logger.info("No response to brightness set (timeout - may be normal)")
-            
-            sock.close()
-            logger.info(f"Successfully set brightness to {percentage}%")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Failed to set TV brightness: {e}")
-            return False
+                    logger.error("All connection attempts failed")
+                    return False
+            except Exception as e:
+                logger.error(f"Failed to set TV brightness on attempt {attempt + 1}: {e}")
+                if attempt < max_retries - 1:
+                    continue
+                else:
+                    return False
+        
+        return False
 
     def send_tv_command(self, action):
         """Send command to NEC TV"""
