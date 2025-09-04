@@ -316,25 +316,46 @@ switch:
         """Send command to NEC TV"""
         try:
             command = COMMANDS[f'power_{action}']
+            logger.info(f"Sending {action} command: {command.hex()}")
             
             # Create socket connection
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(10)  # Increased timeout for better reliability
+            sock.settimeout(5)  # Shorter timeout to match bash script behavior
             
             # Connect to TV
+            logger.info(f"Connecting to TV at {TV_IP}:{TV_PORT}")
             sock.connect((TV_IP, TV_PORT))
+            logger.info("Connected successfully")
             
             # Send command
-            sock.send(command)
+            bytes_sent = sock.send(command)
+            logger.info(f"Sent {bytes_sent} bytes")
+            
+            # Wait for response like the bash script does
+            import time
+            time.sleep(1)
+            try:
+                response = sock.recv(1024)
+                if response:
+                    logger.info(f"TV responded: {response.hex()}")
+                else:
+                    logger.warning("No response from TV")
+            except socket.timeout:
+                logger.info("No response from TV (timeout - this may be normal)")
+            except Exception as resp_e:
+                logger.warning(f"Error reading response: {resp_e}")
             
             # Close connection
             sock.close()
+            logger.info("Connection closed")
             
             logger.info(f"Successfully sent {action} command to TV at {TV_IP}:{TV_PORT}")
             return True
             
         except Exception as e:
             logger.error(f"Failed to send {action} command to TV: {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
             return False
     
     def log_message(self, format, *args):
