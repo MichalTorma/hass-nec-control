@@ -117,10 +117,12 @@ tv_port: 7142
 
 ## 🏠 Home Assistant Configuration
 
+### Basic Power Control
+
 Add this to your `configuration.yaml`:
 
 ```yaml
-# NEC TV Control Switch with Real State Detection
+# NEC TV Power Control Switch with Real State Detection
 switch:
   - platform: rest
     name: "NEC TV Power"
@@ -132,19 +134,85 @@ switch:
     is_on_template: "{{ value_json.is_on }}"
 ```
 
+### Brightness Control (Optional)
+
+For brightness control, add these additional entities:
+
+```yaml
+# Brightness sensor (read current brightness)
+sensor:
+  - platform: rest
+    name: "NEC TV Brightness"
+    resource: "http://localhost:8124/brightness"
+    headers:
+      Content-Type: application/json
+    value_template: "{{ value_json.percentage }}"
+    unit_of_measurement: "%"
+    icon: mdi:brightness-6
+
+# Brightness control slider
+input_number:
+  nec_tv_brightness:
+    name: "NEC TV Brightness Control"
+    min: 0
+    max: 100
+    step: 5
+    unit_of_measurement: "%"
+    icon: mdi:brightness-6
+
+# REST command for setting brightness
+rest_command:
+  set_nec_tv_brightness:
+    url: "http://localhost:8124/brightness"
+    method: POST
+    headers:
+      Content-Type: application/json
+    payload: '{"brightness": {{ brightness }}}'
+
+# Automation to apply brightness changes
+automation:
+  - alias: "Set NEC TV Brightness"
+    trigger:
+      platform: state
+      entity_id: input_number.nec_tv_brightness
+    action:
+      service: rest_command.set_nec_tv_brightness
+      data:
+        brightness: "{{ states('input_number.nec_tv_brightness') | int }}"
+```
+
 After adding this configuration:
 1. **Restart Home Assistant**
 2. **Check for errors** in the logs
-3. **Find your switch** in the Entities page as "NEC TV Power"
+3. **Find your entities**: "NEC TV Power", "NEC TV Brightness", "NEC TV Brightness Control"
 
 ## 🔌 API Endpoints
 
 The add-on provides these endpoints:
 
+### Power Control
+- **`GET /power`** - Get current TV state
+  ```json
+  {"state": "on", "is_on": true, "message": "TV is currently on"}
+  ```
+- **`POST /power`** - Control TV power
+  ```json
+  {"action": "on"}  // or {"action": "off"}
+  ```
+
+### Brightness Control  
+- **`GET /brightness`** - Get current brightness
+  ```json
+  {"brightness": 70, "max_brightness": 100, "percentage": 70, "message": "TV brightness: 70/100 (70%)"}
+  ```
+- **`POST /brightness`** - Set brightness (0-100%)
+  ```json
+  {"brightness": 75}
+  ```
+
+### System Endpoints
 - **`GET /`** - Service information and status
 - **`GET /health`** - Health check endpoint
-- **`GET /power`** - Get current TV state (returns `{"state": "on/off", "is_on": true/false}`)
-- **`POST /power`** - Control TV power (send `{"action": "on"}` or `{"action": "off"}`)
 
 ## 🆘 Support
 

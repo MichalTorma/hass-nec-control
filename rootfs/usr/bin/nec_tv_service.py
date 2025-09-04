@@ -249,6 +249,21 @@ switch:
             }
             self.wfile.write(json.dumps(response).encode())
             
+        elif parsed_url.path == '/brightness':
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            
+            # Query the actual TV brightness
+            brightness_info = self.get_tv_brightness()
+            response = {
+                'brightness': brightness_info['current'],
+                'max_brightness': brightness_info['max'],
+                'percentage': round((brightness_info['current'] / brightness_info['max']) * 100) if brightness_info['max'] > 0 else 0,
+                'message': f'TV brightness: {brightness_info["current"]}/{brightness_info["max"]} ({round((brightness_info["current"] / brightness_info["max"]) * 100) if brightness_info["max"] > 0 else 0}%)'
+            }
+            self.wfile.write(json.dumps(response).encode())
+            
         elif parsed_url.path == '/health':
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
@@ -257,7 +272,7 @@ switch:
             response = {
                 'status': 'healthy',
                 'service': 'NEC TV Control',
-                'version': '1.0.9'
+                'version': '1.0.14'
             }
             self.wfile.write(json.dumps(response).encode())
             
@@ -302,6 +317,46 @@ switch:
                     self.send_header('Content-type', 'application/json')
                     self.end_headers()
                     self.wfile.write(json.dumps({'error': 'Invalid action'}).encode())
+                    
+            except json.JSONDecodeError:
+                self.send_response(400)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'error': 'Invalid JSON'}).encode())
+                
+        elif parsed_url.path == '/brightness':
+            if 'Content-Length' not in self.headers:
+                self.send_response(400)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'error': 'Content-Length header required'}).encode())
+                return
+                
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                brightness = data.get('brightness')
+                
+                if brightness is not None and isinstance(brightness, (int, float)) and 0 <= brightness <= 100:
+                    success = self.set_tv_brightness(int(brightness))
+                    
+                    self.send_response(200)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                    
+                    response = {
+                        'success': success,
+                        'brightness': brightness,
+                        'message': f'TV brightness set to {brightness}%' if success else 'Failed to set brightness'
+                    }
+                    self.wfile.write(json.dumps(response).encode())
+                else:
+                    self.send_response(400)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({'error': 'Invalid brightness value (must be 0-100)'}).encode())
                     
             except json.JSONDecodeError:
                 self.send_response(400)
@@ -367,6 +422,141 @@ switch:
             logger.warning(f"Failed to query TV power state: {e}")
             # If we can't query the state, assume it's off (conservative approach)
             return 'off'
+
+    def get_tv_brightness(self):
+        """Query the actual TV brightness"""
+        try:
+            # Brightness query command: SOH-'0'-'A'-'0'-'C'-'0'-'6'-STX-'0'-'0'-'1'-'0'-ETX-BCC-CR
+            cmd = bytearray([0x01, 0x30, 0x41, 0x30, 0x43, 0x30, 0x36, 0x02, 0x30, 0x30, 0x31, 0x30, 0x03])
+            
+            # Calculate BCC (XOR of all bytes except SOH)
+            bcc = 0
+            for byte in cmd[1:]:
+                bcc ^= byte
+            cmd.append(bcc)
+            cmd.append(0x0D)
+            
+            logger.info(f"Querying TV brightness: {cmd.hex()}")
+            
+            # Create socket connection
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(3)
+            
+            # Connect to TV
+            sock.connect((TV_IP, TV_PORT))
+            
+            # Send query
+            sock.send(cmd)
+            
+            # Wait for response
+            import time
+            time.sleep(0.5)
+            response = sock.recv(1024)
+            sock.close()
+            
+            if response:
+                logger.info(f"Brightness response: {response.hex()}")
+                
+                # Parse the response - brightness values are in ASCII hex format
+                # Response: 01303041443132023030303031303030303036343030343603060d
+                # Decoded: \x0100AD12\x020000100000640046\x03\x06\r
+                # Format: SOH-0-0-A-D-1-2-STX-0-0-0-0-1-0-0-0-0-0-6-4-0-0-4-6-ETX-BCC-CR
+                try:
+                    response_str = response.decode('ascii')
+                    
+                    # Find the message part between STX and ETX
+                    stx_pos = response_str.find('\x02')
+                    etx_pos = response_str.find('\x03')
+                    
+                    if stx_pos != -1 and etx_pos != -1:
+                        message = response_str[stx_pos+1:etx_pos]
+                        logger.info(f"Message part: {repr(message)}")
+                        
+                        # Message format: result-page-opcode-type-maxvalue-currentvalue
+                        # Skip first 8 chars (result-page-opcode-type), then extract values
+                        if len(message) >= 16:
+                            max_brightness_hex = message[8:12]    # positions 8-11: max value
+                            current_brightness_hex = message[12:16]  # positions 12-15: current value
+                            
+                            max_brightness = int(max_brightness_hex, 16)
+                            current_brightness = int(current_brightness_hex, 16)
+                            
+                            logger.info(f"Brightness: {current_brightness}/{max_brightness}")
+                            return {
+                                'current': current_brightness,
+                                'max': max_brightness
+                            }
+                    
+                    logger.warning("Could not find STX/ETX in response")
+                    return {'current': 0, 'max': 100}
+                    
+                except (ValueError, IndexError) as e:
+                    logger.warning(f"Failed to parse brightness response: {e}")
+                    return {'current': 0, 'max': 100}
+            else:
+                logger.warning("No response to brightness query")
+                return {'current': 0, 'max': 100}
+                
+        except Exception as e:
+            logger.warning(f"Failed to query TV brightness: {e}")
+            return {'current': 0, 'max': 100}
+
+    def set_tv_brightness(self, percentage):
+        """Set TV brightness (0-100%)"""
+        try:
+            # Get current max brightness to calculate the actual value
+            brightness_info = self.get_tv_brightness()
+            max_brightness = brightness_info['max']
+            
+            # Calculate actual brightness value
+            brightness_value = int((percentage / 100.0) * max_brightness)
+            
+            # Brightness set command: SOH-'0'-'A'-'0'-'E'-'0'-'A'-STX-'0'-'0'-'1'-'0'-VALUE-ETX-BCC-CR
+            cmd = bytearray([0x01, 0x30, 0x41, 0x30, 0x45, 0x30, 0x41, 0x02, 0x30, 0x30, 0x31, 0x30])
+            
+            # Add brightness value as 4-digit hex ASCII
+            brightness_hex = f"{brightness_value:04X}"
+            cmd.extend([ord(c) for c in brightness_hex])
+            cmd.append(0x03)  # ETX
+            
+            # Calculate BCC
+            bcc = 0
+            for byte in cmd[1:]:
+                bcc ^= byte
+            cmd.append(bcc)
+            cmd.append(0x0D)
+            
+            logger.info(f"Setting TV brightness to {percentage}% (value {brightness_value}): {cmd.hex()}")
+            
+            # Create socket connection
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(5)
+            
+            # Connect to TV
+            sock.connect((TV_IP, TV_PORT))
+            
+            # Send command
+            sock.send(cmd)
+            
+            # Wait for response
+            import time
+            time.sleep(1)
+            try:
+                response = sock.recv(1024)
+                if response:
+                    logger.info(f"Brightness set response: {response.hex()}")
+                else:
+                    logger.warning("No response to brightness set command")
+            except socket.timeout:
+                logger.info("No response to brightness set (timeout - may be normal)")
+            
+            sock.close()
+            logger.info(f"Successfully set brightness to {percentage}%")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to set TV brightness: {e}")
+            return False
 
     def send_tv_command(self, action):
         """Send command to NEC TV"""
