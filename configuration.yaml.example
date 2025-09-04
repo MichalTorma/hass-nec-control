@@ -1,7 +1,7 @@
 # Example Home Assistant configuration for NEC TV Control
 # Add this to your configuration.yaml
 
-# REST switch for NEC TV Power Control
+# REST switch for NEC TV Power Control with actual state detection
 switch:
   - platform: rest
     name: "NEC TV Power"
@@ -10,6 +10,8 @@ switch:
     body_off: '{"action": "off"}'
     headers:
       Content-Type: application/json
+    value_template: "{{ value_json.is_on }}"
+    is_on_template: "{{ value_json.is_on }}"
 
 # Optional: Create a group for easier control
 group:

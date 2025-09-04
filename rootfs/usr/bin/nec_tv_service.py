@@ -240,12 +240,12 @@ switch:
             self.send_header('Content-type', 'application/json')
             self.end_headers()
             
-            # For now, we'll return a default state since we can't query the TV
-            # In a real implementation, you might want to try to query the TV's actual state
+            # Query the actual TV power state
+            tv_state = self.get_tv_power_state()
             response = {
-                'state': 'unknown',
-                'message': 'TV state cannot be determined via network query',
-                'note': 'This is a limitation of the NEC TV protocol - we can only send commands, not query state'
+                'state': tv_state,
+                'is_on': tv_state == 'on',
+                'message': f'TV is currently {tv_state}'
             }
             self.wfile.write(json.dumps(response).encode())
             
@@ -312,6 +312,62 @@ switch:
             self.send_response(404)
             self.end_headers()
     
+    def get_tv_power_state(self):
+        """Query the actual TV power state"""
+        try:
+            # Power status query command: SOH-'0'-'A'-'0'-'A'-'0'-'6'-STX-'0'-'1'-'D'-'6'-ETX-BCC-CR
+            cmd = bytearray([0x01, 0x30, 0x41, 0x30, 0x41, 0x30, 0x36, 0x02, 0x30, 0x31, 0x44, 0x36, 0x03])
+            
+            # Calculate BCC (XOR of all bytes except SOH)
+            bcc = 0
+            for byte in cmd[1:]:
+                bcc ^= byte
+            cmd.append(bcc)
+            cmd.append(0x0D)
+            
+            logger.info(f"Querying TV power state: {cmd.hex()}")
+            
+            # Create socket connection
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(3)  # Shorter timeout for state queries
+            
+            # Connect to TV
+            sock.connect((TV_IP, TV_PORT))
+            
+            # Send query
+            sock.send(cmd)
+            
+            # Wait for response
+            import time
+            time.sleep(0.5)
+            response = sock.recv(1024)
+            sock.close()
+            
+            if response:
+                logger.info(f"Power state response: {response.hex()}")
+                
+                # Parse the response for power mode
+                if b'0001' in response:
+                    logger.info("TV state: ON")
+                    return 'on'
+                elif b'0004' in response:
+                    logger.info("TV state: OFF")
+                    return 'off'
+                elif b'0002' in response:
+                    logger.info("TV state: STANDBY")
+                    return 'standby'
+                else:
+                    logger.warning(f"Unknown power state in response: {response.hex()}")
+                    return 'unknown'
+            else:
+                logger.warning("No response to power state query")
+                return 'unknown'
+                
+        except Exception as e:
+            logger.warning(f"Failed to query TV power state: {e}")
+            # If we can't query the state, assume it's off (conservative approach)
+            return 'off'
+
     def send_tv_command(self, action):
         """Send command to NEC TV"""
         try:
