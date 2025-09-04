@@ -10,7 +10,6 @@ switch:
     body_off: '{"action": "off"}'
     headers:
       Content-Type: application/json
-    value_template: "{{ value_json.is_on }}"
     is_on_template: "{{ value_json.is_on }}"
 
 # Optional: Create a group for easier control

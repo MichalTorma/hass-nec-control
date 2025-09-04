@@ -115,14 +115,36 @@ tv_port: 7142
 - ✅ **Health monitoring** and status checking
 - ✅ **Error handling** and logging
 
+## 🏠 Home Assistant Configuration
+
+Add this to your `configuration.yaml`:
+
+```yaml
+# NEC TV Control Switch with Real State Detection
+switch:
+  - platform: rest
+    name: "NEC TV Power"
+    resource: "http://localhost:8124/power"
+    body_on: '{"action": "on"}'
+    body_off: '{"action": "off"}'
+    headers:
+      Content-Type: application/json
+    is_on_template: "{{ value_json.is_on }}"
+```
+
+After adding this configuration:
+1. **Restart Home Assistant**
+2. **Check for errors** in the logs
+3. **Find your switch** in the Entities page as "NEC TV Power"
+
 ## 🔌 API Endpoints
 
 The add-on provides these endpoints:
 
-- **`/`** - Service information
-- **`/health`** - Health check
-- **`/homeassistant`** - Setup instructions
-- **`/power`** - TV control (POST with `{"action": "on"}` or `{"action": "off"}`)
+- **`GET /`** - Service information and status
+- **`GET /health`** - Health check endpoint
+- **`GET /power`** - Get current TV state (returns `{"state": "on/off", "is_on": true/false}`)
+- **`POST /power`** - Control TV power (send `{"action": "on"}` or `{"action": "off"}`)
 
 ## 🆘 Support
 
