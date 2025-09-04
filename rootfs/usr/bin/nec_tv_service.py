@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 TV_IP = os.environ.get('TV_IP', '192.168.1.150')
 TV_PORT = int(os.environ.get('TV_PORT', 7142))
 
-# NEC TV Commands (hex format)
+# NEC TV Commands (hex format) - FIXED WORKING COMMANDS
 COMMANDS = {
     'power_on': b'\x01\x30\x41\x30\x41\x30\x43\x02\x43\x32\x30\x33\x44\x36\x30\x30\x30\x31\x03\x73\x0D',
     'power_off': b'\x01\x30\x41\x30\x41\x30\x43\x02\x43\x32\x30\x33\x44\x36\x30\x30\x30\x34\x03\x76\x0D'
